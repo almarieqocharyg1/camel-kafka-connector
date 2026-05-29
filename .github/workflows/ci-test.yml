@@ -1,0 +1,45 @@
+name: CI Test
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: "temurin"
+          java-version: "${{"
+          cache: "maven"
+      - name: Install dependencies
+        run: |
+          ./mvnw ${MAVEN_ARGS} \
+          -DskipTests \
+          -pl :parent \
+          -pl :camel-kafka-connector-aggregator \
+          -pl :camel-buildtools \
+          clean install
+      - name: Install dependencies
+        run: |
+          ./mvnw ${MAVEN_ARGS} \
+          -Dcheckstyle.failOnViolation=true \
+          -Psourcecheck \
+          -DskipTests \
+          -pl :camel-kafka-connector-model \
+          -pl :camel-kafka-connector-generator-maven-plugin \
+          -pl :camel-kafka-connector \
+          clean install
+      - name: Install dependencies
+        run: |
+          ./mvnw ${MAVEN_ARGS} \
+          -Dfailsafe.rerunFailingTestsCount=2 \
+          -Dcheckstyle.failOnViolation=true \
+          -Psourcecheck \
+          -DskipIntegrationTests=false \
+          -Dhttp.keepAlive=false \
+          -Dmaven.wagon.http.pool=false \
+          -Dmaven.wagon.httpconnectionManager.ttlSeconds=120 \
+          -pl '!:camel-kafka-connector-generator-maven-plugin' \
+          clean test
+      - name: Run tests
+        run: |
+          mvn test
